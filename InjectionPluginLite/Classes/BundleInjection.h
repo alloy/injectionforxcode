@@ -23,6 +23,12 @@
 #define INJECTION_NOFILE -2
 #define INJECTION_CLOSE -3
 
+#ifdef __IPHONE_OS_VERSION_MIN_REQUIRED
+#define INJECTION_IOS 1
+#else
+#define INJECTION_OSX 1
+#endif
+
 #ifdef DEBUG
 #define INLog NSLog
 #else
@@ -49,7 +55,7 @@ struct _in_header { int pathLength, dataLength; };
 
 #ifndef INJECTION_NOIMPL
 
-#ifdef __IPHONE_OS_VERSION_MIN_REQUIRED
+#ifdef INJECTION_IOS
 @interface UINib(BundleInjection)
 - (NSArray *)inInstantiateWithOwner:(id)ownerOrNil options:(NSDictionary *)optionsOrNil;
 @end
@@ -102,7 +108,7 @@ NSString *kINNotification = @"INJECTION_BUNDLE_NOTIFICATION";
 float INParameters[INJECTION_PARAMETERS] = {1,1,1,1,1};
 id INDelegates[INJECTION_PARAMETERS];
 
-#ifdef __IPHONE_OS_VERSION_MIN_REQUIRED
+#ifdef INJECTION_IOS
 UIColor *INColors[INJECTION_PARAMETERS];
 #else
 NSColor *INColors[INJECTION_PARAMETERS];
@@ -202,7 +208,7 @@ static int status, sbInjection;
                 return;
             }
 
-#if __IPHONE_OS_VERSION_MIN_REQUIRED
+#ifdef INJECTION_IOS
             if ( (sbInjection = status & 2) )
                 method_exchangeImplementations(
                    class_getInstanceMethod([UINib class], @selector(instantiateWithOwner:options:)),
@@ -309,7 +315,7 @@ static int status, sbInjection;
                         for ( j=0 ; j<len ; )
                             j += read( loaderSocket, buff+j, j+block < len ? block : len-j );
                         NSData *data = [NSData dataWithBytesNoCopy:buff length:len freeWhenDone:YES];
-#ifdef __IPHONE_OS_VERSION_MIN_REQUIRED
+#ifdef INJECTION_IOS
                         UIImage *img = [[UIImage alloc] initWithData:data];
 #else
                         NSImage *img = [[NSImage alloc] initWithData:data];
@@ -323,7 +329,7 @@ static int status, sbInjection;
                         break;
 
                     case '@': // project built, reload visible view controllers
-#if __IPHONE_OS_VERSION_MIN_REQUIRED
+#ifdef INJECTION_IOS
                         if ( sbInjection )
                             [self performSelectorOnMainThread:@selector(reloadNibs)
                                                    withObject:nil waitUntilDone:YES];
@@ -348,7 +354,7 @@ static int status, sbInjection;
                             else if ( (tag -= 5) < 5 ) {
                                 float r, g, b, a;
                                 sscanf( file, "%f,%f,%f,%f", &r, &g, &b, &a );
-#ifdef __IPHONE_OS_VERSION_MIN_REQUIRED
+#ifdef INJECTION_IOS
                                 UIColor *col = [UIColor colorWithRed:r green:g
                                                                 blue:b alpha:a];
 #else
@@ -467,7 +473,7 @@ struct _in_objc_class { Class meta, supr; void *cache, *vtable; struct _in_objc_
     [self dumpIvars:oldClass];
     [self dumpIvars:newClass];
 #endif
-#ifdef __IPHONE_OS_VERSION_MIN_REQUIRED
+#ifdef INJECTION_IOS
     if ( notify & 1<<2 ) {
         NSString *msg = [[NSString alloc] initWithFormat:@"Class '%s' injected.", className];
         UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Bundle Loaded"
@@ -488,7 +494,7 @@ struct _in_objc_class { Class meta, supr; void *cache, *vtable; struct _in_objc_
 
 + (void)loadedNotify:(BOOL)notify {
     INLog( @"Bundle \"%s\" loaded successfully.", strrchr( path, '/' )+1 );
-#ifndef __IPHONE_OS_VERSION_MIN_REQUIRED
+#ifndef INJECTION_IOS
     if ( notify & 1<<3 )
         [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
 #endif
@@ -499,7 +505,7 @@ struct _in_objc_class { Class meta, supr; void *cache, *vtable; struct _in_objc_
 
 #endif
 
-#if __IPHONE_OS_VERSION_MIN_REQUIRED
+#ifdef INJECTION_IOS
 
 static NSMutableDictionary *nibsByNibName, *optionsByVC;
 
